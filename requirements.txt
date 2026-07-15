@@ -1,0 +1,37 @@
+
+pandas
+numpy
+matplotlib
+plotly
+jupyter
+yfinance                 # stock OHLCV data
+sec-edgar-downloader     # SEC 10-K / 10-Q filings
+beautifulsoup4           # HTML parsing of filings
+lxml
+datasets                 # Hugging Face datasets (Financial PhraseBank, transcripts)
+kagglehub                # Kaggle dataset downloads
+praw                     # Reddit API (optional; Kaggle dataset is the fallback)
+sqlalchemy               # SQLite storage
+pyarrow                  # parquet files
+python-dotenv
+
+
+# ---------- Week 2: ML / DL / NLP ----------
+scikit-learn
+xgboost
+torch                    # install per https://pytorch.org (CPU build is fine)
+transformers             # FinBERT inference
+spacy                    # NER  (then: python -m spacy download en_core_web_sm)
+
+# ---------- Week 3: RAG & LLM ----------
+sentence-transformers    # free local embeddings (all-MiniLM-L6-v2)
+faiss-cpu                # vector index
+langchain
+langchain-community
+langchain-ollama         # local LLM for development
+langchain-groq           # free-tier cloud LLM for deployment
+
+# ---------- Week 4: app & deployment ----------
+streamlit
+fastapi
+uvicorn
