@@ -40,6 +40,8 @@ def fetch_prices(tickers=TICKERS,years=HISTORY_YEARS) -> pd.DataFrame:
         raise RuntimeError("No data fetched for any ticker")
     return pd.concat(frames, ignore_index=True)
         
+
+
 def save_prices(df: pd.DataFrame) -> None:
     RAW_PRICES_DIR.mkdir(parents=True, exist_ok=True)
     for ticker in df["ticker"].unique():
@@ -50,3 +52,24 @@ def save_prices(df: pd.DataFrame) -> None:
     engine = create_engine(f"sqlite:///{DB_PATH}")
     df.to_sql("prices", engine, if_exists="replace", index=False)
     logger.info("SQLite: %d total rows -> table 'prices'", len(df))
+
+
+def load_prices(tickers=None) -> pd.DataFrame:
+    if tickers is None:
+        tickers = TICKERS
+    frames=[]
+    for ticker in tickers:
+        path=RAW_PRICES_DIR / f"{ticker}.parquet"
+        if not path.exists():
+            logger.warning('No stored data for %s-run fetch_prices() first', ticker)
+            continue
+        frames.append(pd.read_parquet(path))
+    if not frames:
+        raise FileNotFoundError("No stored data found for any ticker")
+    return pd.concat(frames, ignore_index=True)
+
+if __name__ == "__main__":
+    prices = fetch_prices()
+    save_prices(prices)
+    summary = prices.groupby("ticker")["date"].agg(["count", "min", "max"])
+    logger.info("Pipeline complete:\n%s", summary)
