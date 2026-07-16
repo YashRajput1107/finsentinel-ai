@@ -3,6 +3,9 @@ venv/
 .venv/
 .env
 
+# Local working files
+mentorship/
+
 # Data & model artifacts (large / regenerable — keep folder structure via .gitkeep)
 data/*.db
 data/raw/*
