@@ -20,3 +20,7 @@ SEC_USER_AGENT = os.getenv("SEC_EDGAR_USER_AGENT", "")
 SEC_COMPANY, SEC_EMAIL = SEC_USER_AGENT.rsplit(" ", 1)
 RAW_SEC_DIR = DATA_DIR / "raw" / "sec"
 PROCESSED_SEC_DIR = DATA_DIR / "processed" / "sec"
+
+PROCESSED_DIR = DATA_DIR / "processed"
+PHRASEBANK_PATH= PROCESSED_DIR / "phrasebank.parquet"
+NEWS_PATH = PROCESSED_DIR / "news.parquet"
