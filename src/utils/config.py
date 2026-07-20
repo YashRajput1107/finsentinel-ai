@@ -24,3 +24,6 @@ PROCESSED_SEC_DIR = DATA_DIR / "processed" / "sec"
 PROCESSED_DIR = DATA_DIR / "processed"
 PHRASEBANK_PATH= PROCESSED_DIR / "phrasebank.parquet"
 NEWS_PATH = PROCESSED_DIR / "news.parquet"
+
+REDDIT_PATH = PROCESSED_DIR / "reddit.parquet"
+TRANSCRIPTS_DIR = PROCESSED_DIR / "transcripts"
