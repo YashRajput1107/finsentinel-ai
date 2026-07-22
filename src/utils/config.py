@@ -27,3 +27,5 @@ NEWS_PATH = PROCESSED_DIR / "news.parquet"
 
 REDDIT_PATH = PROCESSED_DIR / "reddit.parquet"
 TRANSCRIPTS_DIR = PROCESSED_DIR / "transcripts"
+
+FEATURES_DIR= PROCESSED_DIR / "features"
