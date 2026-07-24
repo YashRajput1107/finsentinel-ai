@@ -29,3 +29,4 @@ REDDIT_PATH = PROCESSED_DIR / "reddit.parquet"
 TRANSCRIPTS_DIR = PROCESSED_DIR / "transcripts"
 
 FEATURES_DIR= PROCESSED_DIR / "features"
+MODELS_DIR = PROJECT_ROOT / "models"
