@@ -6,6 +6,7 @@ venv/
 # Local working files
 mentorship/
 JOURNAL.docx
+TECH_STACK.docx
 ~$*
 
 # Data & model artifacts (large / regenerable — keep folder structure via .gitkeep)
