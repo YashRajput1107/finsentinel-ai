@@ -11,8 +11,9 @@ reported as they occurred.
 3. Investigation: is ~60% directional accuracy achievable?
 4. Experiment: does sentiment add predictive signal?
 5. Sentiment classification results
-6. Limitations
-7. Conclusions and future work
+6. Financial risk score
+7. Limitations
+8. Conclusions and future work
 
 ---
 
@@ -216,7 +217,34 @@ adaptive market.
 
 ---
 
-## 6. Limitations
+## 6. Financial risk score
+
+A transparent 0–10 score summarising each company's balance-sheet risk. It is
+**descriptive, not predictive** — there is no labeled risk target, so a documented
+weighted rule is used rather than an ML model (which would be an unvalidated black box).
+
+**Factors** (min-max normalised within the ten-company universe, oriented so higher =
+riskier), with weights: leverage / debt-to-equity (0.20), illiquidity / inverse current
+ratio (0.20), low profitability / inverse profit margin (0.20), beta (0.15), volatility
+(0.25).
+
+**Result** (low → high risk): GOOGL 2.85, NVDA 3.55, JPM 4.41, MSFT 4.49, XOM 4.52,
+JNJ 4.81, META 5.54, AAPL 6.50, AMZN 6.64, TSLA 7.26.
+
+**Interpretation and known limitations:**
+
+- It measures **financial** risk (balance-sheet health), **not price risk**. NVDA ranks
+  low-risk despite being highly volatile because its fundamentals are strong (high margins,
+  low debt). Price volatility is therefore reported separately, and the metric is labeled
+  "Financial Risk Score" rather than "Risk Score" to avoid misleading a user.
+- **No sector adjustment:** a bank (JPM) carries structurally high leverage that is not
+  normalised against its sector.
+- **Ratio blind spots:** AAPL and AMZN rank high because a ~1.0 current ratio and thin
+  margins do not capture Apple's cash reserves or Amazon's deliberate low-margin strategy.
+- **Survivorship bias** applies (all ten firms are currently healthy), so the score range
+  is compressed and ranks relative risk among survivors only.
+
+## 7. Limitations
 
 - **Temporal mismatch between sources.** News (2011–2020), Reddit (2021), and the original
   price features (2021–2026) do not align. The sentiment experiment was only possible after
@@ -232,7 +260,7 @@ adaptive market.
 
 ---
 
-## 7. Conclusions and future work
+## 8. Conclusions and future work
 
 1. Next-day directional prediction from public daily price features produces a null result.
    This is the expected outcome and is reported rather than concealed.
