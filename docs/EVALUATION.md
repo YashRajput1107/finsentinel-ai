@@ -207,7 +207,29 @@ most operationally important.
 Macro-F1 is reported rather than accuracy because 62% of sentences are neutral; a classifier
 that always predicted "neutral" would score 62% accuracy while providing no information.
 
-FinBERT was used in inference only (transfer learning), not fine-tuned.
+FinBERT was used in inference only — we did not fine-tune it.
+
+### Important caveat — benchmark contamination
+
+The reported 0.938 should be read as an **optimistic upper bound, not real-world
+performance**, for two reasons:
+
+1. **Evaluated on its own training data.** ProsusAI's FinBERT was itself fine-tuned on the
+   Financial PhraseBank — the same dataset used here to evaluate it. Although a train/test
+   split was made, FinBERT had already seen these sentences during *its* training, so the
+   test split is not genuinely held out for it. This is train/test contamination at the
+   level of the benchmark's provenance, and it inflates the score. It also makes the
+   comparison against the TF-IDF baseline (which was trained only on the local train split)
+   not strictly apples-to-apples — FinBERT effectively had a home-field advantage.
+2. **Distribution shift, unmeasured.** The 0.938 is on curated, single-sentence PhraseBank
+   text. FinBERT was then applied to the project's actual news headlines and Reddit posts,
+   which are a different, messier distribution — and unlabeled, so its accuracy on that real
+   target text is unknown.
+
+A fair assessment would evaluate both models on a *separate* financial-sentiment dataset that
+neither had seen (noted as future work). The honest claim is therefore: FinBERT achieves
+0.938 macro-F1 on the PhraseBank benchmark, which is its own training distribution; its
+performance on unseen, in-the-wild financial text is not established here.
 
 **Note on interpretation:** strong sentiment classification does **not** imply a strong
 market predictor. Section 4 shows this directly — accurate sentiment labels did not
@@ -279,3 +301,6 @@ JNJ 4.81, META 5.54, AAPL 6.50, AMZN 6.64, TSLA 7.26.
 - Test **intraday** rather than daily sentiment aggregation.
 - Add a **cost-aware backtest** (transaction costs, slippage, Sharpe ratio, maximum
   drawdown) so that model quality is assessed economically, not only statistically.
+- **Re-evaluate sentiment on a held-out dataset** that FinBERT was not trained on, to
+  measure its true generalization rather than its performance on its own training
+  distribution (see the benchmark-contamination caveat in Section 5).
