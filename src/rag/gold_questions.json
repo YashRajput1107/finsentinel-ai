@@ -1,0 +1,14 @@
+[
+  {"question": "What risks does Tesla face in manufacturing and delivering its vehicles?", "expected_ticker": "TSLA", "topic": "production/supply risk"},
+  {"question": "How is Microsoft investing in artificial intelligence across its products?", "expected_ticker": "MSFT", "topic": "AI strategy"},
+  {"question": "What is Apple's approach to returning cash to shareholders through buybacks and dividends?", "expected_ticker": "AAPL", "topic": "capital return"},
+  {"question": "Where does JPMorgan get most of its revenue?", "expected_ticker": "JPM", "topic": "revenue sources"},
+  {"question": "How does Amazon describe the growth of its AWS cloud business?", "expected_ticker": "AMZN", "topic": "AWS"},
+  {"question": "What supply chain or manufacturing risks does Nvidia disclose?", "expected_ticker": "NVDA", "topic": "supply chain risk"},
+  {"question": "What major legal and litigation risks does Johnson & Johnson report?", "expected_ticker": "JNJ", "topic": "litigation risk"},
+  {"question": "How does Alphabet make the majority of its money?", "expected_ticker": "GOOGL", "topic": "advertising revenue"},
+  {"question": "What does Meta say about competition for people's time and attention?", "expected_ticker": "META", "topic": "competition"},
+  {"question": "How are Exxon's results exposed to swings in oil and gas prices?", "expected_ticker": "XOM", "topic": "commodity price risk"},
+  {"question": "What did Nvidia say about demand for its data center GPUs?", "expected_ticker": "NVDA", "topic": "data center demand"},
+  {"question": "What did Apple say about iPhone demand and sales trends?", "expected_ticker": "AAPL", "topic": "iPhone demand"}
+]
