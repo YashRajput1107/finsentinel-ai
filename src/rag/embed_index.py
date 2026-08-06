@@ -49,17 +49,45 @@ def load_index():
     return index, meta
 
 
-def search(query: str, k: int = 5, model: SentenceTransformer | None = None) -> pd.DataFrame:
+def search(query: str, k: int = 5, ticker=None, source_type=None,
+           model: SentenceTransformer | None = None) -> pd.DataFrame:
     model = model or SentenceTransformer(EMBED_MODEL)
     index, meta = load_index()
 
     q = model.encode([query], normalize_embeddings=True,
                      convert_to_numpy=True).astype("float32")
-    scores, idx = index.search(q, k)          # idx = FAISS row positions
 
-    hits = meta.iloc[idx[0]].copy()           # map rows back to metadata
-    hits["score"] = scores[0]
+    selector, _ids = _build_selector(meta, ticker, source_type)   # _ids kept alive
+    if selector is not None:
+        params = faiss.SearchParameters(sel=selector)
+        scores, idx = index.search(q, k, params=params)   # FAISS only looks at allowed rows
+    else:
+        scores, idx = index.search(q, k)                  # unfiltered, as before
+
+    idx, scores = idx[0], scores[0]
+    idx = idx[idx != -1]          # FAISS returns -1 if fewer than k matches exist
+    hits = meta.iloc[idx].copy()
+    hits["score"] = scores[:len(idx)]
     return hits[["score", "ticker", "source_type", "form_type", "doc_date", "chunk_id", "text"]]
+
+def _build_selector(meta:pd.DataFrame, ticker=None, source_type=None):
+    """Return a FAISS IDSelector limiting search to rows matching the filters,
+    or None if no filter is requested. Row position == FAISS id (alignment contract)."""
+    if ticker is None and source_type is None:
+        return None,None
+    mask=np.ones(len(meta),dtype=bool)
+    if ticker is not None:
+        mask &= (meta["ticker"].values == ticker)
+    if source_type is not None:
+        mask &= (meta["source_type"].values == source_type)
+    ids = np.where(mask)[0].astype("int64")          # allowed row positions
+    selector = faiss.IDSelectorBatch(ids.size, faiss.swig_ptr(ids))
+    return selector, ids   # return ids too — keep it alive during the search
+
+
+    
+
+
 
 if __name__ == "__main__":
     build_index()
