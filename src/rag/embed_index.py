@@ -84,10 +84,65 @@ def _build_selector(meta:pd.DataFrame, ticker=None, source_type=None):
     selector = faiss.IDSelectorBatch(ids.size, faiss.swig_ptr(ids))
     return selector, ids   # return ids too — keep it alive during the search
 
+def _reconstruct(index, ids):
+    """Fetch the stored (normalized) vectors for the given row ids from the FAISS index."""
+    return np.vstack([index.reconstruct(int(i)) for i in ids]).astype("float32")
 
+
+def _mmr(rel, sim, k, lambda_):
+    """Maximal Marginal Relevance selection.
+    rel : (n,)   relevance of each candidate to the query (cosine)
+    sim : (n, n) candidate-to-candidate cosine similarity
+    Returns the chosen candidate indices (into the pool), length <= k.
+    """
+    n=len(rel)
+    k = min(k, n)
+    selected = [int(np.argmax(rel))]   # start with the most relevant
+    while len(selected) < k:
+        best,best_score=None,-np.inf
+        for c in range(n):
+            if c is selected:
+                continue
+            redundancy=max(sim[c,s] for s in selected)
+            score = lambda_ * rel[c] - (1.0 - lambda_) * redundancy
+            if score > best_score:
+                best,best_score=c,score
+        selected.append(best)
+    return selected
+
+def search(query: str, k: int = 5, ticker=None, source_type=None,
+           model: SentenceTransformer | None = None,
+           use_mmr: bool = False, lambda_: float = 0.6, fetch_k: int = 20) -> pd.DataFrame:
+    model = model or SentenceTransformer(EMBED_MODEL)
+    index, meta = load_index()
+
+    q = model.encode([query], normalize_embeddings=True,
+                     convert_to_numpy=True).astype("float32")
+
+    selector, _ids = _build_selector(meta, ticker, source_type)
+    n_fetch = max(fetch_k, k) if use_mmr else k          # over-fetch a pool for MMR to work with
+    if selector is not None:
+        scores, idx = index.search(q, n_fetch, params=faiss.SearchParameters(sel=selector))
+    else:
+        scores, idx = index.search(q, n_fetch)
+
+    idx, scores = idx[0], scores[0]
+    keep = idx != -1
+    idx, scores = idx[keep], scores[keep]
+
+    if use_mmr and len(idx) > k:
+        cand = _reconstruct(index, idx)      # (pool, 384) stored vectors
+        sim = cand @ cand.T                  # candidate-to-candidate cosine (normalized -> dot = cosine)
+        order = _mmr(scores, sim, k, lambda_)  # scores ARE cosine-to-query (relevance)
+        idx, scores = idx[order], scores[order]
+    else:
+        idx, scores = idx[:k], scores[:k]
+
+    hits = meta.iloc[idx].copy()
+    hits["score"] = scores
+    return hits[["score", "ticker", "source_type", "form_type", "doc_date", "chunk_id", "text"]]
     
-
-
+    
 
 if __name__ == "__main__":
     build_index()
