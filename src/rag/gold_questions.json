@@ -10,5 +10,8 @@
   {"question": "What does Meta say about competition for people's time and attention?", "expected_ticker": "META", "topic": "competition"},
   {"question": "How are Exxon's results exposed to swings in oil and gas prices?", "expected_ticker": "XOM", "topic": "commodity price risk"},
   {"question": "What did Nvidia say about demand for its data center GPUs?", "expected_ticker": "NVDA", "topic": "data center demand"},
-  {"question": "What did Apple say about iPhone demand and sales trends?", "expected_ticker": "AAPL", "topic": "iPhone demand"}
+  {"question": "What did Apple say about iPhone demand and sales trends?", "expected_ticker": "AAPL", "topic": "iPhone demand"},
+  {"question": "What are the main business risks disclosed by Netflix?", "ticker": null, "answerable": false, "topic": "company outside universe"},
+  {"question": "What will Nvidia's data center revenue be in fiscal 2030?", "ticker": "NVDA", "answerable": false, "topic": "forward prediction"},
+  {"question": "How many employees does Amazon have in Germany specifically?", "ticker": "AMZN", "answerable": false, "topic": "granular datum absent"}
 ]

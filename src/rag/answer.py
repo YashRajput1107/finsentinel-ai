@@ -28,8 +28,8 @@ def format_context(hits) -> str:
     return "\n\n".join(lines)
 
 def answer(question: str, ticker=None, k: int = 5,
-           model: SentenceTransformer | None = None) -> dict:
-    hits = search(question, k=k, ticker=ticker, model=model)
+           model: SentenceTransformer | None = None, use_mmr: bool = True) -> dict:
+    hits = search(question, k=k, ticker=ticker, model=model, use_mmr=use_mmr)
     if len(hits) == 0:                       # nothing retrieved -> can't ground -> refuse
         return {"answer": "I don't know based on the provided documents.", "sources": []}
 

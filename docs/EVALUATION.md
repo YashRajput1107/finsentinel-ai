@@ -12,8 +12,9 @@ reported as they occurred.
 4. Experiment: does sentiment add predictive signal?
 5. Sentiment classification results
 6. Financial risk score
-7. Limitations
-8. Conclusions and future work
+7. RAG system evaluation
+8. Limitations
+9. Conclusions and future work
 
 ---
 
@@ -266,7 +267,70 @@ JNJ 4.81, META 5.54, AAPL 6.50, AMZN 6.64, TSLA 7.26.
 - **Survivorship bias** applies (all ten firms are currently healthy), so the score range
   is compressed and ranks relative risk among survivors only.
 
-## 7. Limitations
+## 7. RAG system evaluation
+
+The retrieval-augmented generation (RAG) pipeline answers natural-language questions over
+SEC filings (10-K/10-Q) and earnings-call transcripts for the ten companies. Pipeline:
+chunk → embed (all-MiniLM-L6-v2) → FAISS cosine index → metadata-filtered retrieval with
+MMR diversity → grounded answer via a local LLM (Ollama, `llama3.2`) instructed to answer
+only from retrieved context and to refuse otherwise.
+
+### Retrieval evaluation (Day 20)
+
+A 12-question gold set (one per company topic) was used to measure whether the correct
+company's chunks are retrieved, without pre-filtering by ticker.
+
+| Metric | Result |
+|---|---|
+| hits@1 | 11/12 (0.92) |
+| hits@3 | 12/12 (1.00) |
+| hits@5 | 12/12 (1.00) |
+
+**Read with caveats:** each question names its company (an easy retrieval signal),
+ticker-match is a proxy for true relevance, and n = 12 is a smoke test, not a benchmark.
+
+### Answer-pipeline evaluation (Day 23)
+
+A 15-question set (12 answerable + 3 deliberately unanswerable) tested the full
+retrieve → ground → cite → refuse pipeline. The three unanswerable questions were designed
+to be *tempting* — retrieval returns topically-related chunks — so they test grounding under
+pressure, not trivial empty-retrieval refusal (a company outside the universe; a
+forward-looking prediction; a granular datum absent from filings).
+
+| Metric | Result | Interpretation |
+|---|---|---|
+| Refusal accuracy (unanswerable) | 3/3 | Correctly refused all tempting out-of-corpus questions |
+| Citation rate (answerable) | 9/12 clean | Non-citing answers are the false refusals |
+| Groundedness (answerable, answered) | 9/9 | Every answered claim traces to a cited chunk (author-judged; one numeric claim — Apple "45.5m iPhones" — verified against the source) |
+| Answer relevance (answerable, answered) | 9/9 | Every answer addresses the question asked |
+| **False-refusal rate (answerable)** | **3/12 (0.25)** | Refused three questions it had the context to answer |
+
+**Groundedness and relevance were judged manually**, not by an LLM judge: the local judge
+model (`llama3.2`, 3B) is weaker than the generator, so a weak auto-grader would add noise,
+not rigor. At n = 15, careful human judgement is the more honest instrument.
+
+### The false-refusal finding (investigated, not hidden)
+
+The 25% false-refusal rate is the pipeline's real weakness. Investigation:
+
+- **MMR trade-off.** "Where does JPMorgan get most of its revenue?" refuses *stably* (5/5 runs)
+  only when MMR is enabled. Diversifying the context trades away some of the single
+  most-answer-bearing chunk, and the strict 3B model then cannot locate a crisp answer.
+  MMR reduced redundancy (Section on Day 22: worst-pair similarity 1.0 → 0.63) but slightly
+  raised false refusals — a genuine precision/recall trade-off.
+- **Small-model instability.** Other borderline questions (Tesla, Alphabet) flip between
+  answer and refusal across runs, so `temperature = 0` is only approximately deterministic
+  for this model.
+
+**Framing.** A 25% false-refusal rate is high for usability, but over-refusal is the safe
+failure direction for a financial tool — refusing is preferable to hallucinating. No answer
+in the evaluation was found to be ungrounded. Reducing false refusals (higher MMR λ, a larger
+local model such as `llama3.1:8b`, or a larger context `k`) is a deployment-tuning task, and
+the number is reported rather than tuned away.
+
+---
+
+## 8. Limitations
 
 - **Temporal mismatch between sources.** News (2011–2020), Reddit (2021), and the original
   price features (2021–2026) do not align. The sentiment experiment was only possible after
@@ -279,10 +343,16 @@ JNJ 4.81, META 5.54, AAPL 6.50, AMZN 6.64, TSLA 7.26.
   a cost-aware backtest is not yet implemented.
 - **Single asset class, single market.** US large-cap equities only.
 - **Static data.** No live feed; all sources are historical snapshots.
+- **RAG corpus gaps.** Earnings-call transcripts exist for only 5 of the 10 companies
+  (AAPL, AMZN, GOOGL, MSFT, NVDA); all 10 have 10-K/10-Q filings. Source text also carries
+  minor encoding artifacts from extraction.
+- **RAG false refusals.** The answer pipeline refuses ~25% of answerable questions (safe
+  direction, but a usability cost), driven by an MMR precision/recall trade-off and a small
+  local generator model.
 
 ---
 
-## 8. Conclusions and future work
+## 9. Conclusions and future work
 
 1. Next-day directional prediction from public daily price features produces a null result.
    This is the expected outcome and is reported rather than concealed.
@@ -292,6 +362,10 @@ JNJ 4.81, META 5.54, AAPL 6.50, AMZN 6.64, TSLA 7.26.
    0.938 macro-F1.
 4. The most informative part of this exercise was the methodology: an apparent improvement
    from a single test window was shown to be noise once evaluated across five windows.
+5. The RAG pipeline grounds and cites answers over the filing/transcript corpus and refuses
+   tempting out-of-corpus questions (3/3). Its main weakness is a 25% false-refusal rate on
+   answerable questions — a documented precision/recall trade-off, reported rather than tuned
+   away.
 
 **Future work, in order of expected value:**
 
@@ -304,3 +378,6 @@ JNJ 4.81, META 5.54, AAPL 6.50, AMZN 6.64, TSLA 7.26.
 - **Re-evaluate sentiment on a held-out dataset** that FinBERT was not trained on, to
   measure its true generalization rather than its performance on its own training
   distribution (see the benchmark-contamination caveat in Section 5).
+- **Reduce RAG false refusals** by tuning MMR λ toward relevance, testing a larger local
+  generator (`llama3.1:8b`), or increasing retrieved context `k` — measured against the
+  15-question answer eval so the guardrail is not weakened in the process.
