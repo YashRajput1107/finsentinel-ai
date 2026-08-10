@@ -29,3 +29,4 @@ fastapi
 uvicorn
 langchain-text-splitters
 ollama
+pytest

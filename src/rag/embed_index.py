@@ -101,7 +101,7 @@ def _mmr(rel, sim, k, lambda_):
     while len(selected) < k:
         best,best_score=None,-np.inf
         for c in range(n):
-            if c is selected:
+            if c in selected:          # skip ones we've already picked (had 'is' here, always false)
                 continue
             redundancy=max(sim[c,s] for s in selected)
             score = lambda_ * rel[c] - (1.0 - lambda_) * redundancy
@@ -113,6 +113,12 @@ def _mmr(rel, sim, k, lambda_):
 def search(query: str, k: int = 5, ticker=None, source_type=None,
            model: SentenceTransformer | None = None,
            use_mmr: bool = False, lambda_: float = 0.6, fetch_k: int = 20) -> pd.DataFrame:
+    # bail out early on bad input, no point loading the model for these
+    if not query or not query.strip():
+        raise ValueError("query must be a non-empty string")
+    if k <= 0:
+        raise ValueError("k must be a positive integer")
+
     model = model or SentenceTransformer(EMBED_MODEL)
     index, meta = load_index()
 
