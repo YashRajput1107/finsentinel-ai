@@ -11,3 +11,10 @@ def sample_meta():
         "source_type": ["filing", "transcript", "filing", "filing"],
         "text": ["a", "b", "c", "d"],
     })
+
+@pytest.fixture(scope="session")
+def embed_model():
+    """Load MiniLM once for the whole test session (it's slow to construct)."""
+    from sentence_transformers import SentenceTransformer
+    from src.rag.embed_index import EMBED_MODEL
+    return SentenceTransformer(EMBED_MODEL)
