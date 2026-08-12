@@ -52,21 +52,26 @@ with tab_overview:
 
     # the slider returns (start, end); everything below recomputes for that window
     view = df[(df["date"].dt.date >= start) & (df["date"].dt.date <= end)]
-    vclose = view["close"]
 
-    latest = vclose.iloc[-1]
-    prev = vclose.iloc[-2] if len(vclose) > 1 else latest
-    period_return = (vclose.iloc[-1] / vclose.iloc[0] - 1) * 100
-    window_vol = vclose.pct_change().std() * np.sqrt(252) * 100
+    # a narrow window can land entirely on weekends/holidays -> no rows to plot
+    if view.empty:
+        st.warning("No trading days in that range — try widening it.")
+    else:
+        vclose = view["close"]
 
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Latest close", f"${latest:,.2f}", f"{(latest / prev - 1) * 100:+.2f}%")
-    c2.metric("Period return", f"{period_return:+.1f}%")
-    c3.metric("Annualized volatility", f"{window_vol:.1f}%")
+        latest = vclose.iloc[-1]
+        prev = vclose.iloc[-2] if len(vclose) > 1 else latest
+        period_return = (vclose.iloc[-1] / vclose.iloc[0] - 1) * 100
+        window_vol = vclose.pct_change().std() * np.sqrt(252) * 100
 
-    st.subheader(f"{ticker} — closing price")
-    st.line_chart(view.set_index("date")["close"])
-    st.caption(f"{len(view):,} trading days · {start:%Y-%m-%d} to {end:%Y-%m-%d}")
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Latest close", f"${latest:,.2f}", f"{(latest / prev - 1) * 100:+.2f}%")
+        c2.metric("Period return", f"{period_return:+.1f}%")
+        c3.metric("Annualized volatility", f"{window_vol:.1f}%")
+
+        st.subheader(f"{ticker} — closing price")
+        st.line_chart(view.set_index("date")["close"])
+        st.caption(f"{len(view):,} trading days · {start:%Y-%m-%d} to {end:%Y-%m-%d}")
 
 with tab_sentiment:
     st.subheader(f"{ticker} — sentiment (FinBERT)")
