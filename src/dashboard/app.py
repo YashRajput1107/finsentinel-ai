@@ -41,22 +41,32 @@ df = get_prices(ticker)
 close = df["close"]
 ann_vol = close.pct_change().std() * np.sqrt(252) * 100
 
-tab_overview, tab_sentiment, tab_risk, tab_models = st.tabs(
-    ["Overview", "Sentiment", "Risk", "Models"]
+tab_overview, tab_sentiment, tab_risk, tab_compare, tab_models = st.tabs(
+    ["Overview", "Sentiment", "Risk", "Compare", "Models"]
 )
 
 with tab_overview:
-    latest = close.iloc[-1]
-    period_return = (close.iloc[-1] / close.iloc[0] - 1) * 100
+    dmin, dmax = df["date"].min().date(), df["date"].max().date()
+    start, end = st.slider("Date range", min_value=dmin, max_value=dmax,
+                           value=(dmin, dmax), format="YYYY-MM-DD")
+
+    # the slider returns (start, end); everything below recomputes for that window
+    view = df[(df["date"].dt.date >= start) & (df["date"].dt.date <= end)]
+    vclose = view["close"]
+
+    latest = vclose.iloc[-1]
+    prev = vclose.iloc[-2] if len(vclose) > 1 else latest
+    period_return = (vclose.iloc[-1] / vclose.iloc[0] - 1) * 100
+    window_vol = vclose.pct_change().std() * np.sqrt(252) * 100
 
     c1, c2, c3 = st.columns(3)
-    c1.metric("Latest close", f"${latest:,.2f}")
+    c1.metric("Latest close", f"${latest:,.2f}", f"{(latest / prev - 1) * 100:+.2f}%")
     c2.metric("Period return", f"{period_return:+.1f}%")
-    c3.metric("Annualized volatility", f"{ann_vol:.1f}%")
+    c3.metric("Annualized volatility", f"{window_vol:.1f}%")
 
     st.subheader(f"{ticker} — closing price")
-    st.line_chart(df.set_index("date")["close"])
-    st.caption(f"{len(df):,} trading days · {df['date'].min():%Y-%m-%d} to {df['date'].max():%Y-%m-%d}")
+    st.line_chart(view.set_index("date")["close"])
+    st.caption(f"{len(view):,} trading days · {start:%Y-%m-%d} to {end:%Y-%m-%d}")
 
 with tab_sentiment:
     st.subheader(f"{ticker} — sentiment (FinBERT)")
@@ -75,6 +85,14 @@ with tab_sentiment:
         c3.metric("Negative", f"{counts.get('negative', 0) / len(subset) * 100:.0f}%")
 
         st.bar_chart(counts)
+
+        # totals alone hide movement - roll up per month to see how mood shifted
+        trend = subset.copy()
+        trend["month"] = pd.to_datetime(trend["date"]).dt.to_period("M").dt.to_timestamp()
+        monthly = trend.pivot_table(index="month", columns="sentiment",
+                                    values="sentiment_score", aggfunc="count").fillna(0)
+        st.line_chart(monthly)
+
         st.caption(
             f"{len(subset):,} {source} items · {subset['date'].min():%Y-%m-%d} to "
             f"{subset['date'].max():%Y-%m-%d}. **Historical, not live** — this is not current market mood."
@@ -103,6 +121,27 @@ with tab_risk:
             "highly price-volatile, which is why volatility is shown separately. Weights are chosen, "
             "not learned; no sector adjustment."
         )
+
+with tab_compare:
+    st.subheader("Compare companies")
+    picks = st.multiselect("Companies", TICKERS, default=["AAPL", "TSLA", "NVDA"])
+
+    if len(picks) < 2:
+        st.info("Pick at least two companies to compare.")
+    else:
+        # rebase each series to 100 at the start - otherwise a $300 stock just sits
+        # above a $30 one and the chart tells you nothing about performance
+        series = {}
+        for t in picks:
+            c = get_prices(t).set_index("date")["close"]
+            series[t] = c / c.iloc[0] * 100
+        st.line_chart(pd.DataFrame(series))
+        st.caption("Rebased to 100 at the start of the period — compares *growth*, not price level.")
+
+        risk = get_risk_scores()
+        st.bar_chart(risk[risk["ticker"].isin(picks)].set_index("ticker")["financial_risk_score"])
+        st.caption("Financial risk score (0-10, higher = riskier). Balance-sheet health, not price risk.")
+
 
 with tab_models:
     st.subheader("Model performance — measured, not promised")
