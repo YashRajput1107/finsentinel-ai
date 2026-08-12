@@ -14,6 +14,11 @@ from sqlalchemy import create_engine
 from src.data_pipeline.stock_data import load_prices
 from src.utils.config import TICKERS, NEWS_PATH, REDDIT_PATH, DB_PATH
 
+from src.rag.answer import answer
+from src.rag.embed_index import EMBED_MODEL
+
+
+
 st.set_page_config(page_title="FinSentinel", page_icon="📈", layout="wide")
 
 @st.cache_data
@@ -41,8 +46,8 @@ df = get_prices(ticker)
 close = df["close"]
 ann_vol = close.pct_change().std() * np.sqrt(252) * 100
 
-tab_overview, tab_sentiment, tab_risk, tab_compare, tab_models = st.tabs(
-    ["Overview", "Sentiment", "Risk", "Compare", "Models"]
+tab_overview, tab_sentiment, tab_risk, tab_compare, tab_chat, tab_models = st.tabs(
+    ["Overview", "Sentiment", "Risk", "Compare", "Chat", "Models"]
 )
 
 with tab_overview:
@@ -173,3 +178,57 @@ with tab_models:
     )
 
     st.caption("Full methodology and results: docs/EVALUATION.md")
+
+@st.cache_resource
+def get_embedder():
+    """The sentence-transformer, loaded once per session.
+    NOTE: cache_resource, not cache_data - see below."""
+    from sentence_transformers import SentenceTransformer
+    return SentenceTransformer(EMBED_MODEL)
+
+with tab_chat:
+    st.subheader("Ask the filings")
+    scope = st.checkbox(f"Search only {ticker}", value=True)
+
+    # ordinary variables die on every rerun; session_state survives the session.
+    # this is the ONLY reason chat history can exist.
+    if "chat" not in st.session_state:
+        st.session_state.chat = []
+
+    for msg in st.session_state.chat:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+            if msg.get("sources"):
+                with st.expander("Sources"):
+                    for s in msg["sources"]:
+                        st.write(f"[{s['n']}] {s['ticker']} {s['form_type']} "
+                                 f"{s['doc_date']} · chunk #{s['chunk_id']}")
+
+    q = st.chat_input("e.g. What risks does this company flag in its filings?")
+    if q:
+        st.session_state.chat.append({"role": "user", "content": q})
+        with st.chat_message("user"):
+            st.markdown(q)
+
+        with st.chat_message("assistant"):
+            # the local model takes real time - silence would look like a freeze
+            with st.spinner("Searching filings and drafting a grounded answer…"):
+                out = answer(q, ticker=ticker if scope else None, model=get_embedder())
+
+            st.markdown(out["answer"])
+            if out["sources"]:
+                with st.expander("Sources"):
+                    for s in out["sources"]:
+                        st.write(f"[{s['n']}] {s['ticker']} {s['form_type']} "
+                                 f"{s['doc_date']} · chunk #{s['chunk_id']}")
+
+        st.session_state.chat.append({
+            "role": "assistant", "content": out["answer"], "sources": out["sources"],
+        })
+
+    st.caption(
+        "Answers come **only** from SEC filings and earnings-call transcripts in this corpus. "
+        "If the documents don't contain the answer, the assistant says so rather than guessing. "
+        "This is document Q&A — **not investment advice**."
+    )
+
