@@ -30,3 +30,4 @@ uvicorn
 langchain-text-splitters
 ollama
 pytest
+groq

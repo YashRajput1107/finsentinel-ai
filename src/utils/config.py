@@ -32,3 +32,11 @@ FEATURES_DIR= PROCESSED_DIR / "features"
 MODELS_DIR = PROJECT_ROOT / "models"
 
 SEQ_LENGTH= 60
+
+# LLM provider: "ollama" for local dev (free, no key), "groq" for deployment (fast, cloud).
+# Set LLM_PROVIDER in .env or the host's env to switch - no code change needed.
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "ollama")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+
+OLLAMA_MODEL = "llama3.2"
+GROQ_MODEL = "llama-3.3-70b-versatile"
