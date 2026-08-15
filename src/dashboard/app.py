@@ -207,24 +207,18 @@ with tab_chat:
     q = st.chat_input("e.g. What risks does this company flag in its filings?")
     if q:
         st.session_state.chat.append({"role": "user", "content": q})
-        with st.chat_message("user"):
-            st.markdown(q)
 
-        with st.chat_message("assistant"):
-            # the local model takes real time - silence would look like a freeze
-            with st.spinner("Searching filings and drafting a grounded answer…"):
-                out = answer(q, ticker=ticker if scope else None, model=get_embedder())
-
-            st.markdown(out["answer"])
-            if out["sources"]:
-                with st.expander("Sources"):
-                    for s in out["sources"]:
-                        st.write(f"[{s['n']}] {s['ticker']} {s['form_type']} "
-                                 f"{s['doc_date']} · chunk #{s['chunk_id']}")
+        # generation takes real time - silence would look like a freeze
+        with st.spinner("Searching filings and drafting a grounded answer…"):
+            out = answer(q, ticker=ticker if scope else None, model=get_embedder())
 
         st.session_state.chat.append({
             "role": "assistant", "content": out["answer"], "sources": out["sources"],
         })
+        # inside a tab st.chat_input isn't pinned to the bottom, so anything drawn
+        # after it lands below the box. rerun instead and let the history loop
+        # above draw the new turn in the right place.
+        st.rerun()
 
     st.caption(
         "Answers come **only** from SEC filings and earnings-call transcripts in this corpus. "
