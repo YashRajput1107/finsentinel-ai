@@ -1,4 +1,5 @@
 import logging
+from functools import lru_cache
 
 import faiss
 import numpy as np
@@ -43,9 +44,14 @@ def build_index() -> None:
     df.to_parquet(META_PATH, index=False)   # saved in the SAME order -> the alignment contract
     logger.info("Saved index -> %s | metadata -> %s", INDEX_PATH, META_PATH)
 
+@lru_cache(maxsize=1)
 def load_index():
+    """Read the index + aligned metadata once per process. Without the cache this
+    re-read ~70MB from disk on EVERY query - cheap on an SSD, expensive on a
+    constrained host. lru_cache keeps this module free of any UI framework."""
     index = faiss.read_index(str(INDEX_PATH))
     meta = pd.read_parquet(META_PATH)
+    logger.info("index loaded | %d vectors", index.ntotal)
     return index, meta
 
 
