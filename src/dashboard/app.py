@@ -208,9 +208,17 @@ with tab_chat:
     if q:
         st.session_state.chat.append({"role": "user", "content": q})
 
-        # generation takes real time - silence would look like a freeze
-        with st.spinner("Searching filings and drafting a grounded answer…"):
-            out = answer(q, ticker=ticker if scope else None, model=get_embedder())
+        # echo the question back in the spinner - otherwise the box just empties
+        # and the user sees nothing at all until the answer lands
+        try:
+            with st.spinner(f"Searching filings for: {q}"):
+                out = answer(q, ticker=ticker if scope else None, model=get_embedder())
+        except Exception as e:
+            # a traceback on a public URL is ugly and leaks internals; log it for us,
+            # show the user a sentence
+            print(f"chat failed: {type(e).__name__}: {e}")
+            out = {"answer": "Something went wrong while answering that. Please try again.",
+                   "sources": []}
 
         st.session_state.chat.append({
             "role": "assistant", "content": out["answer"], "sources": out["sources"],
