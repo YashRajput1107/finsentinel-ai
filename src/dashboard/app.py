@@ -58,9 +58,11 @@ with tab_overview:
     # the slider returns (start, end); everything below recomputes for that window
     view = df[(df["date"].dt.date >= start) & (df["date"].dt.date <= end)]
 
-    # a narrow window can land entirely on weekends/holidays -> no rows to plot
-    if view.empty:
-        st.warning("No trading days in that range — try widening it.")
+    # a narrow window can land on weekends/holidays (no rows) or on one or two days.
+    # volatility needs 3 rows: pct_change drops the first, and a sample std needs two
+    # values after that - fewer and it comes out NaN and renders as "nan%".
+    if len(view) < 3:
+        st.warning("Select a range covering at least three trading days.")
     else:
         vclose = view["close"]
 
