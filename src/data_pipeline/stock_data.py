@@ -1,7 +1,6 @@
 import logging
 
 import pandas as pd
-import yfinance as yf
 
 from sqlalchemy import create_engine
 
@@ -11,6 +10,10 @@ logging.basicConfig(level=logging.INFO,format="%(levelname)s %(name)s: %(message
 logger = logging.getLogger(__name__)
 
 def fetch_prices(tickers=TICKERS,years=HISTORY_YEARS) -> pd.DataFrame:
+    # imported here, not at module level: only this function needs yfinance, and the
+    # deployed app imports load_prices() without it installed
+    import yfinance as yf
+
     frames=[]
     for ticker in tickers:
         try:

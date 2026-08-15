@@ -1,0 +1,14 @@
+.git
+.gitignore
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+notebooks/
+mentorship/
+tests/
+models/
+data/raw/
+!data/raw/prices/
+*.docx
+*.ipynb

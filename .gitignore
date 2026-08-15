@@ -33,3 +33,13 @@ Thumbs.db
 .vscode/
 .idea/
 src/rag/answer_review.csv 
+
+# runtime artifacts the deployed app needs (raw sources stay ignored)
+!data/finsentinel.db
+!data/processed/news.parquet
+!data/processed/reddit.parquet
+!data/processed/rag_index/
+!data/processed/rag_index/**
+# price parquets are the app runtime source for load_prices() (668K)
+!data/raw/prices/
+!data/raw/prices/**

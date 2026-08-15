@@ -1,0 +1,21 @@
+-r requirements.txt
+pytest
+jupyter
+matplotlib
+plotly
+yfinance
+sec-edgar-downloader
+beautifulsoup4
+lxml
+datasets
+kagglehub
+praw
+scikit-learn
+xgboost
+transformers
+spacy
+langchain
+langchain-community
+langchain-text-splitters
+langchain-ollama
+langchain-groq
