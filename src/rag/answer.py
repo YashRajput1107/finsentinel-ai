@@ -1,4 +1,5 @@
 import logging
+import re
 import time
 
 import ollama
@@ -10,11 +11,14 @@ from src.utils.config import LLM_PROVIDER, GROQ_API_KEY, OLLAMA_MODEL, GROQ_MODE
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
 
-# This system prompt IS the grounding mechanism — the one soft guardrail we discussed.
+# This prompt is the grounding mechanism. It is only a soft guardrail - the model can
+# ignore it - which is why there is an honesty test in the evaluation set.
 SYSTEM_PROMPT = (
     "You are a financial document assistant. Answer the user's question using ONLY "
-    "the numbered context passages provided. Cite the passages you use by their number "
-    "in square brackets, e.g. [1] or [2]. "
+    "the numbered context passages provided. "
+    "Every factual statement in your answer must cite the passage it came from, using "
+    "plain ASCII square brackets around the number, like [1] or [2]. Do not use any "
+    "other bracket style. An answer with no citations is not acceptable. "
     "If the answer is not contained in the context, reply exactly: "
     "\"I don't know based on the provided documents.\" "
     "Do not use any outside knowledge."
@@ -69,6 +73,9 @@ def answer(question: str, ticker=None, k: int = 5,
     user_msg = f"Context passages:\n\n{context}\n\nQuestion: {question}"
 
     text = chat_completion(SYSTEM_PROMPT, user_msg)
+    # some models cite with full-width brackets (【1】) no matter what the prompt asks for.
+    # same citation, different glyph - normalise it so the UI is consistent.
+    text = re.sub(r"【(\d+)】", r"[\1]", text)
 
     sources = [
         {"n": i, "ticker": r.ticker, "form_type": r.form_type,

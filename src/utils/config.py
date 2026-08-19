@@ -42,4 +42,4 @@ LLM_PROVIDER = os.getenv("LLM_PROVIDER", "ollama")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 
 OLLAMA_MODEL = "llama3.2"
-GROQ_MODEL = "llama-3.3-70b-versatile"
+GROQ_MODEL = "openai/gpt-oss-120b"

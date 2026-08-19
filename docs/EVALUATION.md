@@ -332,16 +332,29 @@ the number is reported rather than tuned away.
 
 The deployed application cannot run a local model (Streamlit Community Cloud provides no GPU
 and no background LLM server), so generation was moved behind a provider abstraction: Ollama
-`llama3.2` (3B) for local development, Groq `llama-3.3-70b-versatile` (70B) for deployment.
+`llama3.2` (3B) for local development, Groq for deployment.
+
+**Note (Aug 2026):** the original deployment model, `llama-3.3-70b-versatile`, was withdrawn
+by Groq and began returning `404 model_not_found` in production. It was replaced with
+`openai/gpt-oss-120b` and the evaluation below was re-run rather than carried over.
 
 **A provider switch is a model change, so the evaluation was re-run rather than assumed to
 carry over.** The same 15-question set, same retrieval, same prompt — only the generator differs:
 
-| Metric | Ollama `llama3.2` (3B) | Groq `llama-3.3-70b` (70B) |
+| Metric | Ollama `llama3.2` (3B) | Groq `openai/gpt-oss-120b` |
 |---|---|---|
 | Refusal accuracy (unanswerable) | 3/3 | **3/3** |
-| Citation rate (answerable) | 9/12 | **11/12** |
-| False refusals (answerable) | 3/12 (0.25) | **1/12 (0.08)** |
+| Citation rate (answerable) | 9/12 | **12/12** |
+| False refusals (answerable) | 3/12 (0.25) | **0/12** |
+
+Two changes were needed to reach those numbers, both found by re-running the evaluation:
+
+- **Citation notation.** `gpt-oss-120b` cites using full-width brackets (`【1】`) regardless of
+  the prompt asking for ASCII. The prompt was tightened and, when that did not hold, the
+  answer is normalised (`【1】` -> `[1]`) before display. Same citation, different glyph.
+- **API errors were being scored as behavioural failures.** A transient Groq outage returns
+  the app's fallback message, which the evaluator counted as "failed to refuse". It now
+  detects and excludes those, so the metric measures the pipeline rather than Groq's uptime.
 
 **Findings.**
 
@@ -382,7 +395,7 @@ across all three metrics but rests on a small sample.
   minor encoding artifacts from extraction.
 - **RAG false refusals.** The answer pipeline refuses some answerable questions (safe
   direction, but a usability cost): ~25% with the local 3B model, falling to ~8% with the
-  70B deployment model. Driven by an MMR precision/recall trade-off and generator capacity.
+  current deployment model. Driven by an MMR precision/recall trade-off and generator capacity.
 - **Two generators, one evaluation set.** Local development and deployment run different
   models, so results are reported per provider (Section 7) rather than as a single number.
 
@@ -400,7 +413,7 @@ across all three metrics but rests on a small sample.
    from a single test window was shown to be noise once evaluated across five windows.
 5. The RAG pipeline grounds and cites answers over the filing/transcript corpus and refuses
    tempting out-of-corpus questions (3/3 on both generators tested). Its main weakness is a
-   false-refusal rate on answerable questions — 25% with the local 3B model, 8% with the 70B
+   false-refusal rate on answerable questions — 25% with the local 3B model, 0/12 with the
    deployment model — a documented precision/recall trade-off, reported rather than tuned away.
 6. Switching inference providers was treated as a model change: the evaluation set was re-run
    on the new generator rather than assuming the previous numbers still applied.

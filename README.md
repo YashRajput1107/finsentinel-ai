@@ -173,11 +173,11 @@ Reddit text. The honest claim is "0.938 on PhraseBank", nothing more.
 Measured on a 15-question set (12 answerable, 3 deliberately unanswerable but *tempting* —
 retrieval returns plausible-looking passages for each):
 
-| Metric | Local (Llama 3.2, 3B) | Deployed (Llama 3.3, 70B) |
+| Metric | Local (Llama 3.2, 3B) | Deployed (gpt-oss-120b) |
 |---|---|---|
 | Refusal accuracy on unanswerable questions | 3/3 | **3/3** |
-| Citation rate | 9/12 | **11/12** |
-| False refusals on answerable questions | 3/12 (25%) | **1/12 (8%)** |
+| Citation rate | 9/12 | **12/12** |
+| False refusals on answerable questions | 3/12 (25%) | **0/12** |
 
 Retrieval separately scores hits@3 = 1.00 on a 12-question set — which I'd read cautiously,
 since every question names its company and 12 questions is a smoke test, not a benchmark.
