@@ -43,3 +43,4 @@ src/rag/answer_review.csv
 # price parquets are the app runtime source for load_prices() (668K)
 !data/raw/prices/
 !data/raw/prices/**
+INTERVIEW_QA_BY_DAY.docx
